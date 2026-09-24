@@ -1,0 +1,246 @@
+Question 1
+
+
+import sqlite3
+
+conn = None
+try:
+    # Connect (creates students.db if it doesn't exist)
+    conn = sqlite3.connect("students.db")
+    cur = conn.cursor()
+
+    # Create table
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS students (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            age INTEGER,
+            course TEXT
+        )
+    """)
+
+    # Clear old rows so re-running doesn't duplicate data
+    cur.execute("DELETE FROM students")
+
+    # Insert data
+    students = [
+        ("Alice", 20, "Computer Science"),
+        ("Bob", 22, "Information Systems"),
+        ("Carol", 21, "Software Engineering"),
+    ]
+    cur.executemany("INSERT INTO students (name, age, course) VALUES (?, ?, ?)", students)
+    conn.commit()
+
+    # Retrieve data
+    cur.execute("SELECT id, name, age, course FROM students")
+    for row in cur.fetchall():
+        print(row)
+
+except sqlite3.Error as e:
+    print("Database error:", e)
+finally:
+    if conn:
+        conn.close()
+
+
+
+Question 2
+
+Encapsulation is the bundling data (attributes) and the methods that work on it
+inside one class, and restricting direct access to the data. In Python this
+is done with naming conventions:
+  - _name   : protected (convention only, "please don't touch")
+  - __name  : private (name mangling -> _ClassName__name, not accessible
+              directly from outside the class)
+Outside code must go through public methods, which can validate input.
+"""
+
+class BankAccount:
+    def __init__(self, owner, initial_balance=0):
+        self.owner = owner
+        self.__balance = 0            # private attribute
+        if initial_balance > 0:
+            self.__balance = initial_balance
+
+    def deposit(self, amount):
+        if amount <= 0:
+            print("Deposit must be positive.")
+            return
+        self.__balance += amount
+        print(f"Deposited {amount}. ")
+
+    def withdraw(self, amount):
+        if amount <= 0:
+            print("Withdrawal must be positive.")
+        elif amount > self.__balance:
+            print("Insufficient funds.")
+        else:
+            self.__balance -= amount
+            print(f"Withdrew {amount}.")
+
+    def display_balance(self):
+        print(f"{self.owner}'s balance: {self.__balance}")
+
+
+# ---- Demonstration ----
+acct = BankAccount("Prince", 1000)
+acct.display_balance()
+acct.deposit(500)
+acct.withdraw(200)
+acct.withdraw(5000)          # rejected by validation
+acct.display_balance()
+
+# Direct access to the private attribute fails:
+try:
+    print(acct.__balance)
+except AttributeError as e:
+    print("Direct access blocked:", e)
+
+# Setting acct.__balance from outside just creates a NEW unrelated attribute;
+# the real balance is untouched:
+acct.__balance = 999999
+acct.display_balance()       # still the real balance
+
+# (Name mangling means it's technically reachable as below, but this is
+# strongly discouraged - it shows privacy in Python is by convention.)
+print("Mangled name:", acct._BankAccount__balance)
+
+
+
+Question 3 
+Server py
+
+import socket
+
+HOST, PORT = "127.0.0.1", 65432
+
+try:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server.bind((HOST, PORT))
+        server.listen()
+        print(f"Server listening on {HOST}:{PORT} ...")
+
+        conn, addr = server.accept()
+        with conn:
+            print("Connected by", addr)
+            data = conn.recv(1024)
+            if data:
+                print("Received:", data.decode("utf-8"))
+except OSError as e:
+    print("Server socket error:", e)
+except KeyboardInterrupt:
+    print("Server stopped.")
+
+
+Client py
+import socket
+
+HOST, PORT = "127.0.0.1", 65432
+
+try:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client:
+        client.settimeout(5)
+        client.connect((HOST, PORT))
+        client.sendall("Hello from client!".encode("utf-8"))
+        print("Message sent.")
+except ConnectionRefusedError:
+    print("Connection refused - is the server running?")
+except socket.timeout:
+    print("Connection timed out.")
+except OSError as e:
+    print("Client socket error:", e)
+
+
+
+Question 4
+import random
+
+numbers = [round(random.uniform(0, 10), 2) for _ in range(5)]
+print("Random numbers:", numbers)
+print("Minimum:", min(numbers))
+print("Maximum:", max(numbers))
+
+
+
+QUESTION 5
+ Python code 
+
+from abc import ABC, abstractmethod
+
+class FileHandler(ABC):
+    @abstractmethod
+    def read(self):
+        pass
+
+    @abstractmethod
+    def write(self, data):
+        pass
+
+
+class TextFileHandler(FileHandler):
+    def __init__(self, filename):
+        self.filename = filename
+
+    def read(self):
+        with open(self.filename, "r") as f:
+            return f.read()
+
+    def write(self, data):
+        with open(self.filename, "w") as f:
+            f.write(data)
+        print(f"Text data written to {self.filename}")
+
+
+class BinaryFileHandler(FileHandler):
+    def __init__(self, filename):
+        self.filename = filename
+
+    def read(self):
+        with open(self.filename, "rb") as f:
+            return f.read()
+
+    def write(self, data):
+        with open(self.filename, "wb") as f:
+            f.write(data)
+        print(f"Binary data written to {self.filename}")
+
+
+
+class Vehicle:
+    def __init__(self, brand, speed):
+        self.brand = brand
+        self.speed = speed
+
+    def describe(self):
+        return f"{self.brand} vehicle moving at {self.speed} km/h"
+
+    def sound(self):
+        return "Generic vehicle sound"
+
+
+class Car(Vehicle):
+    def __init__(self, brand, speed, doors):
+        super().__init__(brand, speed)
+        self.doors = doors
+
+    def sound(self):
+        return "Vroom! Car engine running."
+
+    def describe(self):
+        return f"{self.brand} car with {self.doors} doors, moving at {self.speed} km/h"
+
+QUESTION 6
+
+
+class Bike(Vehicle):
+    def __init__(self, brand, speed, has_gears):
+        super().__init__(brand, speed)
+        self.has_gears = has_gears
+
+    def sound(self):
+        return "Ring ring! Bike bell."
+
+    def describe(self):
+        gear_info = "with gears" if self.has_gears else "without gears"
+        return f"{self.brand} bike {gear_info}, moving at {self.speed} km/h"
